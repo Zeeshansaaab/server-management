@@ -1,0 +1,5 @@
+# Cron entry template for scheduled artisan commands
+# Variables: {cron_expression}, {site_path}, {php_version}, {command}, {user}
+
+{cron_expression} {user} cd {site_path} && /usr/bin/php{php_version} artisan {command} >> /dev/null 2>&1
+
