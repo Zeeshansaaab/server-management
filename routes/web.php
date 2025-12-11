@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sites', [DashboardController::class, 'sites'])->name('sites.index');
     Route::post('/sites', [DashboardController::class, 'storeSite'])->name('sites.store');
     Route::get('/sites/{site}', [DashboardController::class, 'site'])->name('sites.show');
+    Route::get('/sites/{site}/deployments', [DashboardController::class, 'deploymentHistory'])->name('sites.deployments');
     Route::post('/sites/{site}', [DashboardController::class, 'updateSite'])->name('sites.update');
     Route::post('/sites/{site}/recheck', [DashboardController::class, 'recheckSite'])->name('sites.recheck');
     Route::get('/sites/{site}/recheck-status', [DashboardController::class, 'checkRecheckStatus'])->name('sites.recheck-status');
@@ -44,6 +45,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/sites/{site}/pm2-logs', [DashboardController::class, 'getPm2Logs'])->name('sites.pm2-logs');
     Route::get('/sites/{site}/env-file', [DashboardController::class, 'getEnvFile'])->name('sites.env-file');
     Route::post('/sites/{site}/env-file', [DashboardController::class, 'updateEnvFile'])->name('sites.env-file.update');
+    
+    // Deployment rollback and retry routes
+    Route::post('/sites/{site}/deployments/rollback', [DashboardController::class, 'rollbackDeployment'])->name('sites.deployments.rollback');
+    Route::post('/deployments/{deployment}/retry', [DashboardController::class, 'retryDeployment'])->name('deployments.retry');
 });
 
 // Webhook routes (no auth required - uses token authentication)

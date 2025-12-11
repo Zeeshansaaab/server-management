@@ -13,6 +13,7 @@ class Deployment extends Model
 
     protected $fillable = [
         'site_id',
+        'branch',
         'status',
         'release_path',
         'commit_hash',

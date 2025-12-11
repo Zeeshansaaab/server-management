@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Server;
 use App\Models\Site;
 use App\Models\Deployment;
+use App\Models\DeploymentLog;
 use App\Models\ScheduledCommand;
 use App\Services\SiteScannerService;
 use App\Services\CronJobService;
@@ -175,6 +176,33 @@ class DashboardController extends Controller
 
         return Inertia::render('Sites/Show', [
             'site' => $site,
+        ]);
+    }
+
+    /**
+     * Show deployment history for a site.
+     */
+    public function deploymentHistory(Site $site): Response
+    {
+        // Ensure user owns the server this site belongs to
+        if ($site->server->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Load all deployments with logs, ordered by latest first
+        $deployments = Deployment::where('site_id', $site->id)
+            ->with(['logs' => function ($query) {
+                $query->orderBy('order');
+            }])
+            ->orderBy('started_at', 'desc')
+            ->paginate(20);
+
+        // Load site with minimal relations
+        $site->load('server');
+
+        return Inertia::render('Sites/DeploymentHistory', [
+            'site' => $site,
+            'deployments' => $deployments,
         ]);
     }
 
@@ -899,28 +927,27 @@ class DashboardController extends Controller
 
         // Generate default script based on framework
         $webDirectory = $site->getWebDirectoryPath();
-        $releasesPath = $site->getReleasesPath();
-        $currentPath = $site->getCurrentPath();
+        $branch = $site->repository_branch ?? 'main';
         
         $deploymentService = app(\App\Services\DeploymentService::class);
         $commands = $deploymentService->getDeploymentCommands(
             $site,
-            $releasesPath . '/{release_id}',
-            $currentPath,
-            $releasesPath,
-            $site->repository_branch ?? 'main'
+            $webDirectory,
+            $branch,
+            null
         );
 
         // Format as script with placeholders
         $script = "# Deployment Script for {$site->domain}\n";
-        $script .= "# Available placeholders: {release_path}, {current_path}, {releases_path}, {branch}, {domain}, {web_directory}\n";
-        $script .= "# These will be replaced with actual values during deployment\n\n";
+        $script .= "# Available placeholders: {web_directory}, {branch}, {domain}, {commit_hash}\n";
+        $script .= "# These will be replaced with actual values during deployment\n";
+        $script .= "# Note: Using direct checkout approach (no release directories)\n\n";
         
         foreach ($commands as $step => $command) {
             // Replace actual paths with placeholders for display
             $displayCommand = str_replace(
-                [$releasesPath . '/{release_id}', $currentPath, $releasesPath, $webDirectory],
-                ['{release_path}', '{current_path}', '{releases_path}', '{web_directory}'],
+                [$webDirectory, $branch],
+                ['{web_directory}', '{branch}'],
                 $command
             );
             $script .= "# {$step}\n";
@@ -1197,18 +1224,11 @@ class DashboardController extends Controller
 
         try {
             $sshService = app(\App\Services\SshService::class);
-            $currentPath = $site->getCurrentPath();
+            $webDirectory = $site->getWebDirectoryPath();
             
-            // Try to read .env file from current path
-            $command = "cat " . escapeshellarg($currentPath . '/.env') . " 2>&1";
+            // Read .env file from web directory
+            $command = "cat " . escapeshellarg($webDirectory . '/.env') . " 2>&1";
             $result = $sshService->execute($site->server, $command, false);
-
-            if (!$result['success'] || str_contains($result['output'], 'No such file')) {
-                // Try web directory as fallback
-                $webDirectory = $site->getWebDirectoryPath();
-                $command = "cat " . escapeshellarg($webDirectory . '/.env') . " 2>&1";
-                $result = $sshService->execute($site->server, $command, false);
-            }
 
             if (!$result['success'] || str_contains($result['output'], 'No such file')) {
                 return response()->json([
@@ -1251,25 +1271,12 @@ class DashboardController extends Controller
 
         try {
             $sshService = app(\App\Services\SshService::class);
-            $currentPath = $site->getCurrentPath();
-            $envPath = $currentPath . '/.env';
+            $webDirectory = $site->getWebDirectoryPath();
+            $envPath = $webDirectory . '/.env';
             
-            // First check if .env exists in current path, otherwise try web directory
+            // Check if .env exists, if not we'll create it
             $checkCommand = "test -f " . escapeshellarg($envPath) . " && echo 'exists' || echo 'not_found'";
             $checkResult = $sshService->execute($site->server, $checkCommand, false);
-            
-            if (trim($checkResult['output']) !== 'exists') {
-                // Try web directory
-                $webDirectory = $site->getWebDirectoryPath();
-                $envPath = $webDirectory . '/.env';
-                $checkCommand = "test -f " . escapeshellarg($envPath) . " && echo 'exists' || echo 'not_found'";
-                $checkResult = $sshService->execute($site->server, $checkCommand, false);
-                
-                if (trim($checkResult['output']) !== 'exists') {
-                    // Create .env file in current path
-                    $envPath = $currentPath . '/.env';
-                }
-            }
 
             // Write content to .env file using base64 encoding to handle special characters
             // This is more reliable than echo for multiline content
@@ -1324,6 +1331,100 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update .env file: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Rollback to a previous deployment.
+     */
+    public function rollbackDeployment(Site $site, Request $request)
+    {
+        if ($site->server->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'deployment_id' => 'nullable|integer|exists:deployments,id',
+        ]);
+
+        try {
+            $deploymentService = app(DeploymentService::class);
+            $deploymentId = $validated['deployment_id'] ?? null;
+            
+            $rollbackDeployment = $deploymentService->rollback($site, $deploymentId);
+
+            Log::info('Deployment rollback completed', [
+                'site_id' => $site->id,
+                'deployment_id' => $rollbackDeployment->id,
+                'target_deployment_id' => $deploymentId,
+            ]);
+
+            return response()->json([
+                'success' => $rollbackDeployment->status === 'success',
+                'deployment' => $rollbackDeployment->load('logs'),
+                'message' => $rollbackDeployment->status === 'success' 
+                    ? 'Rollback completed successfully' 
+                    : 'Rollback failed: ' . ($rollbackDeployment->error_message ?? 'Unknown error'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Rollback deployment failed', [
+                'site_id' => $site->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to rollback deployment: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Retry a failed deployment.
+     */
+    public function retryDeployment(Deployment $deployment)
+    {
+        $site = $deployment->site;
+        
+        if ($site->server->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($deployment->status !== 'failed') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Can only retry failed deployments',
+            ], 400);
+        }
+
+        try {
+            $deploymentService = app(DeploymentService::class);
+            $retryDeployment = $deploymentService->retry($deployment);
+
+            Log::info('Deployment retry completed', [
+                'site_id' => $site->id,
+                'original_deployment_id' => $deployment->id,
+                'retry_deployment_id' => $retryDeployment->id,
+            ]);
+
+            return response()->json([
+                'success' => $retryDeployment->status === 'success',
+                'deployment' => $retryDeployment->load('logs'),
+                'message' => $retryDeployment->status === 'success' 
+                    ? 'Deployment retry completed successfully' 
+                    : 'Deployment retry failed: ' . ($retryDeployment->error_message ?? 'Unknown error'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Retry deployment failed', [
+                'site_id' => $site->id,
+                'deployment_id' => $deployment->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retry deployment: ' . $e->getMessage(),
             ], 500);
         }
     }

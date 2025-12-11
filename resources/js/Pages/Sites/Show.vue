@@ -557,20 +557,129 @@
                 </div>
             </div>
 
+            <!-- Deployment Analytics -->
+            <div class="mb-8">
+                <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50 p-6">
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">Deployment Analytics</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                            <div class="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Deployments</div>
+                            <div class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ site.deployments?.length || 0 }}</div>
+                        </div>
+                        <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-4">
+                            <div class="text-sm text-emerald-600 dark:text-emerald-400 mb-1">Successful</div>
+                            <div class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{{ getDeploymentAnalytics().successCount }}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ getDeploymentAnalytics().successRate }}% success rate</div>
+                        </div>
+                        <div class="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-4">
+                            <div class="text-sm text-rose-600 dark:text-rose-400 mb-1">Failed</div>
+                            <div class="text-2xl font-bold text-rose-700 dark:text-rose-300">{{ getDeploymentAnalytics().failedCount }}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ getDeploymentAnalytics().failedRate }}% failure rate</div>
+                        </div>
+                        <div class="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
+                            <div class="text-sm text-cyan-600 dark:text-cyan-400 mb-1">Avg Duration</div>
+                            <div class="text-2xl font-bold text-cyan-700 dark:text-cyan-300">{{ getDeploymentAnalytics().avgDuration }}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">per deployment</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                            <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Status Distribution</h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600 dark:text-slate-400">Success</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-32 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                            <div class="bg-emerald-500 h-2 rounded-full" :style="{ width: getDeploymentAnalytics().successRate + '%' }"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100 w-8 text-right">{{ getDeploymentAnalytics().successCount }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600 dark:text-slate-400">Failed</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-32 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                            <div class="bg-rose-500 h-2 rounded-full" :style="{ width: getDeploymentAnalytics().failedRate + '%' }"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100 w-8 text-right">{{ getDeploymentAnalytics().failedCount }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-slate-600 dark:text-slate-400">Running</span>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-32 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                            <div class="bg-amber-500 h-2 rounded-full" :style="{ width: getDeploymentAnalytics().runningRate + '%' }"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100 w-8 text-right">{{ getDeploymentAnalytics().runningCount }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                            <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Recent Activity</h3>
+                            <div class="space-y-2 text-sm">
+                                <div v-for="(deployment, index) in (site.deployments || []).slice(0, 5)" :key="deployment.id" class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <span
+                                            :class="{
+                                                'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400': deployment.status === 'success',
+                                                'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400': deployment.status === 'failed',
+                                                'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400': deployment.status === 'running',
+                                            }"
+                                            class="w-2 h-2 rounded-full"
+                                        ></span>
+                                        <span class="text-slate-600 dark:text-slate-400">Deployment #{{ deployment.id }}</span>
+                                    </div>
+                                    <span class="text-slate-500 dark:text-slate-500 text-xs">{{ getTimeAgo(deployment.started_at) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Deployments History -->
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Deployment History</h2>
-                    <span class="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-full text-sm font-medium">
-                        {{ site.deployments?.length || 0 }} deployment{{ (site.deployments?.length || 0) !== 1 ? 's' : '' }}
-                    </span>
+                    <div class="flex items-center space-x-3">
+                        <button
+                            v-if="comparisonDeployments.length > 0"
+                            @click="showComparisonModal = true"
+                            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                        >
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                            </svg>
+                            Compare ({{ comparisonDeployments.length }}/2)
+                        </button>
+                        <input
+                            v-model="deploymentSearch"
+                            type="text"
+                            placeholder="Search deployments..."
+                            class="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 w-48"
+                        />
+                        <select
+                            v-model="deploymentStatusFilter"
+                            class="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        >
+                            <option value="">All Status</option>
+                            <option value="success">Success</option>
+                            <option value="failed">Failed</option>
+                            <option value="running">Running</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                        <span class="px-3 py-1 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded-full text-sm font-medium">
+                            {{ filteredDeployments.length }} deployment{{ filteredDeployments.length !== 1 ? 's' : '' }}
+                        </span>
+                    </div>
                 </div>
-                <div v-if="site.deployments && site.deployments.length > 0" class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
+                <div v-if="filteredDeployments && filteredDeployments.length > 0" class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
                     <ul class="divide-y divide-slate-200 dark:divide-slate-700">
-                        <li v-for="deployment in site.deployments" :key="deployment.id" class="px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <li v-for="deployment in filteredDeployments" :key="deployment.id" class="px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                             <div class="flex items-center justify-between">
                                 <div class="flex-1">
-                                    <div class="flex items-center space-x-3">
+                                    <div class="flex items-center space-x-3 mb-2">
                                         <div class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                                             Deployment #{{ deployment.id }}
                                         </div>
@@ -585,30 +694,153 @@
                                         >
                                             {{ deployment.status }}
                                         </span>
+                                        <span v-if="deployment.started_at && deployment.completed_at" class="text-xs text-slate-500 dark:text-slate-400">
+                                            Duration: {{ getDeploymentDuration(deployment) }}
+                                        </span>
                                     </div>
-                                    <div class="mt-2 flex items-center space-x-4 text-sm text-slate-600 dark:text-slate-400">
+                                    <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
                                         <span class="flex items-center">
                                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            {{ new Date(deployment.created_at).toLocaleString() }}
+                                            <span class="font-medium">Started:</span>
+                                            <span class="ml-1">{{ deployment.started_at ? new Date(deployment.started_at).toLocaleString() : 'N/A' }}</span>
                                         </span>
-                                        <span v-if="deployment.commit_hash" class="flex items-center font-mono">
+                                        <span v-if="deployment.completed_at" class="flex items-center">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span class="font-medium">Completed:</span>
+                                            <span class="ml-1">{{ new Date(deployment.completed_at).toLocaleString() }}</span>
+                                        </span>
+                                        <span v-if="deployment.branch" class="flex items-center">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <span class="font-medium">Branch:</span>
+                                            <code class="ml-1 font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                                                {{ deployment.branch }}
+                                            </code>
+                                        </span>
+                                        <span v-if="deployment.commit_hash" class="flex items-center group">
                                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                                             </svg>
-                                            {{ deployment.commit_hash.substring(0, 7) }}
+                                            <code class="font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded mr-1">
+                                                {{ deployment.commit_hash.substring(0, 7) }}
+                                            </code>
+                                            <button
+                                                @click.stop="copyCommitHash(deployment.commit_hash)"
+                                                class="opacity-0 group-hover:opacity-100 transition-opacity text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300"
+                                                title="Copy commit hash"
+                                            >
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                            </button>
+                                            <a
+                                                v-if="site.repository_url"
+                                                :href="getCommitUrl(site.repository_url, deployment.commit_hash)"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                @click.stop
+                                                class="ml-1 text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300"
+                                                title="View commit on GitHub"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                            </a>
                                         </span>
                                         <span v-if="deployment.release_path" class="flex items-center">
                                             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2 2H5a2 2 0 00-2 2z" />
                                             </svg>
-                                            {{ deployment.release_path.split('/').pop() }}
+                                            <code class="font-mono text-xs">{{ deployment.release_path.split('/').pop() }}</code>
+                                        </span>
+                                        <span v-if="deployment.logs && deployment.logs.length > 0" class="flex items-center text-xs">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            {{ deployment.logs.length }} step{{ deployment.logs.length !== 1 ? 's' : '' }}
+                                            <span v-if="getDeploymentStats(deployment).errorCount > 0" class="ml-2 text-rose-600 dark:text-rose-400">
+                                                ({{ getDeploymentStats(deployment).errorCount }} error{{ getDeploymentStats(deployment).errorCount !== 1 ? 's' : '' }})
+                                            </span>
                                         </span>
                                     </div>
-                                    <div v-if="deployment.error_message" class="mt-2 text-sm text-rose-600 dark:text-rose-400">
-                                        {{ deployment.error_message }}
+                                    <div v-if="deployment.error_message" class="mt-2 p-2 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded text-sm text-rose-700 dark:text-rose-300">
+                                        <span class="font-semibold">Error:</span> {{ deployment.error_message }}
                                     </div>
+                                </div>
+                                <div class="flex items-center space-x-2 ml-4">
+                                    <button
+                                        v-if="deployment.status === 'failed'"
+                                        @click="retryDeployment(deployment.id)"
+                                        :disabled="isRetryingDeployment === deployment.id"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Retry this failed deployment"
+                                    >
+                                        <svg v-if="isRetryingDeployment === deployment.id" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        Retry
+                                    </button>
+                                    <button
+                                        v-if="deployment.status === 'success' && deployment.commit_hash"
+                                        @click="rollbackToDeployment(deployment.id)"
+                                        :disabled="isRollingBack"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Rollback to this deployment"
+                                    >
+                                        <svg v-if="isRollingBack" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                        </svg>
+                                        Rollback
+                                    </button>
+                                    <button
+                                        v-if="deployment.status === 'success'"
+                                        @click="checkDeploymentHealth(deployment.id)"
+                                        :disabled="isCheckingHealth === deployment.id"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Check site health"
+                                    >
+                                        <svg v-if="isCheckingHealth === deployment.id" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Health Check
+                                    </button>
+                                    <button
+                                        @click="selectDeploymentForComparison(deployment.id)"
+                                        :disabled="comparisonDeployments.length >= 2 && !comparisonDeployments.includes(deployment.id)"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Compare deployments (select up to 2)"
+                                    >
+                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                                        </svg>
+                                        Compare
+                                    </button>
+                                    <button
+                                        @click="loadDeploymentLogs(deployment.id)"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors"
+                                    >
+                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        View Logs
+                                    </button>
                                 </div>
                             </div>
                         </li>
@@ -1080,8 +1312,19 @@
                                 <div>
                                     <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Deployment Logs</h3>
                                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                        {{ site.latest_deployment ? `Deployment #${site.latest_deployment.id} - ${site.latest_deployment.status}` : 'No deployment found' }}
+                                        {{ selectedDeployment ? `Deployment #${selectedDeployment.id} - ${selectedDeployment.status}` : (site.latest_deployment ? `Deployment #${site.latest_deployment.id} - ${site.latest_deployment.status}` : 'No deployment found') }}
                                     </p>
+                                    <div v-if="selectedDeployment" class="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                        <span v-if="selectedDeployment.started_at && selectedDeployment.completed_at">
+                                            Duration: {{ getDeploymentDuration(selectedDeployment) }}
+                                        </span>
+                                        <span v-if="selectedDeployment.commit_hash">
+                                            Commit: {{ selectedDeployment.commit_hash.substring(0, 7) }}
+                                        </span>
+                                        <span v-if="selectedDeployment.logs && selectedDeployment.logs.length > 0">
+                                            {{ selectedDeployment.logs.length }} step{{ selectedDeployment.logs.length !== 1 ? 's' : '' }}
+                                        </span>
+                                    </div>
                                 </div>
                                 <button
                                     @click="showDeploymentLogsModal = false"
@@ -1106,7 +1349,7 @@
                             </div>
                             <div v-else class="space-y-4">
                                 <div
-                                    v-for="log in (deploymentLogs.length > 0 ? deploymentLogs : (site.latest_deployment?.logs || [])).sort((a, b) => a.order - b.order)"
+                                    v-for="log in (deploymentLogs.length > 0 ? deploymentLogs : (selectedDeployment?.logs || site.latest_deployment?.logs || [])).sort((a, b) => a.order - b.order)"
                                     :key="log.id"
                                     class="border-l-4 pl-4 py-2"
                                     :class="{
@@ -1132,9 +1375,98 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end">
+                        <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                            <button
+                                @click="exportDeploymentLogs"
+                                class="inline-flex items-center px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                            >
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Export Logs
+                            </button>
                             <button
                                 @click="showDeploymentLogsModal = false"
+                                class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deployment Comparison Modal -->
+            <div v-if="showComparisonModal" class="fixed inset-0 z-[100] overflow-y-auto" @click.self="showComparisonModal = false">
+                <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                    <div class="fixed inset-0 transition-opacity bg-slate-500 bg-opacity-75 dark:bg-opacity-90 z-[101]" @click="showComparisonModal = false"></div>
+                    <div class="inline-block align-bottom bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full relative z-[102]">
+                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Compare Deployments</h3>
+                                <button
+                                    @click="showComparisonModal = false; comparisonDeployments = []"
+                                    class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                            <div v-if="comparisonDeployments.length < 2" class="text-center py-8 text-slate-500 dark:text-slate-400">
+                                <p>Select 2 deployments to compare</p>
+                            </div>
+                            <div v-else class="grid grid-cols-2 gap-6">
+                                <div v-for="(deploymentId, index) in comparisonDeployments" :key="deploymentId">
+                                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                                        <h4 class="font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                                            Deployment #{{ getDeploymentById(deploymentId)?.id }}
+                                            <span
+                                                :class="{
+                                                    'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400': getDeploymentById(deploymentId)?.status === 'success',
+                                                    'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400': getDeploymentById(deploymentId)?.status === 'failed',
+                                                    'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400': getDeploymentById(deploymentId)?.status === 'running',
+                                                }"
+                                                class="ml-2 px-2 py-0.5 rounded text-xs font-semibold"
+                                            >
+                                                {{ getDeploymentById(deploymentId)?.status }}
+                                            </span>
+                                        </h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">Branch:</span>
+                                                <span class="font-medium text-slate-900 dark:text-slate-100">{{ getDeploymentById(deploymentId)?.branch || 'N/A' }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">Commit:</span>
+                                                <code class="font-mono text-slate-900 dark:text-slate-100">{{ getDeploymentById(deploymentId)?.commit_hash?.substring(0, 7) || 'N/A' }}</code>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">Started:</span>
+                                                <span class="text-slate-900 dark:text-slate-100">{{ getDeploymentById(deploymentId)?.started_at ? new Date(getDeploymentById(deploymentId).started_at).toLocaleString() : 'N/A' }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">Duration:</span>
+                                                <span class="text-slate-900 dark:text-slate-100">{{ getDeploymentById(deploymentId) ? getDeploymentDuration(getDeploymentById(deploymentId)) : 'N/A' }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">Steps:</span>
+                                                <span class="text-slate-900 dark:text-slate-100">{{ getDeploymentById(deploymentId)?.logs?.length || 0 }}</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-600 dark:text-slate-400">Errors:</span>
+                                                <span class="text-rose-600 dark:text-rose-400">{{ getDeploymentById(deploymentId) ? getDeploymentStats(getDeploymentById(deploymentId)).errorCount : 0 }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end">
+                            <button
+                                @click="showComparisonModal = false; comparisonDeployments = []"
                                 class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                             >
                                 Close
@@ -1222,8 +1554,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -1246,6 +1578,14 @@ const isLoadingScript = ref(false);
 const isSavingScript = ref(false);
 const deploymentLogs = ref([]);
 const isLoadingLogs = ref(false);
+const selectedDeployment = ref(null);
+const deploymentSearch = ref('');
+const deploymentStatusFilter = ref('');
+const comparisonDeployments = ref([]);
+const showComparisonModal = ref(false);
+const isCheckingHealth = ref(null);
+const isRollingBack = ref(false);
+const isRetryingDeployment = ref(null);
 const recheckJobId = ref(null);
 const scheduledCommands = ref(props.site.scheduled_commands || []);
 const showAddCronModal = ref(false);
@@ -1462,18 +1802,321 @@ const saveDeploymentScript = async () => {
     }
 };
 
-const loadDeploymentLogs = async () => {
-    if (!props.site.latest_deployment) {
+// Computed property for filtered deployments
+const filteredDeployments = computed(() => {
+    let deployments = props.site.deployments || [];
+    
+    // Filter by status
+    if (deploymentStatusFilter.value) {
+        deployments = deployments.filter(d => d.status === deploymentStatusFilter.value);
+    }
+    
+    // Filter by search term
+    if (deploymentSearch.value) {
+        const search = deploymentSearch.value.toLowerCase();
+        deployments = deployments.filter(d => {
+            return (
+                d.id.toString().includes(search) ||
+                (d.commit_hash && d.commit_hash.toLowerCase().includes(search)) ||
+                (d.status && d.status.toLowerCase().includes(search)) ||
+                (d.error_message && d.error_message.toLowerCase().includes(search)) ||
+                (d.release_path && d.release_path.toLowerCase().includes(search))
+            );
+        });
+    }
+    
+    return deployments;
+});
+
+// Helper functions
+const getDeploymentDuration = (deployment) => {
+    if (!deployment.started_at) return 'N/A';
+    if (!deployment.completed_at) return 'In progress...';
+    
+    const start = new Date(deployment.started_at);
+    const end = new Date(deployment.completed_at);
+    const diff = Math.floor((end - start) / 1000); // seconds
+    
+    if (diff < 60) return `${diff}s`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ${diff % 60}s`;
+    return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
+};
+
+const getDeploymentStats = (deployment) => {
+    if (!deployment.logs || deployment.logs.length === 0) {
+        return { errorCount: 0, successCount: 0, warningCount: 0 };
+    }
+    
+    return {
+        errorCount: deployment.logs.filter(log => log.level === 'error').length,
+        successCount: deployment.logs.filter(log => log.level === 'info').length,
+        warningCount: deployment.logs.filter(log => log.level === 'warning').length,
+    };
+};
+
+const copyCommitHash = async (commitHash) => {
+    try {
+        await navigator.clipboard.writeText(commitHash);
+        alert('Commit hash copied to clipboard!');
+    } catch (err) {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = commitHash;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('Commit hash copied to clipboard!');
+    }
+};
+
+const exportDeploymentLogs = () => {
+    const deployment = selectedDeployment.value || props.site.latest_deployment;
+    if (!deployment) return;
+    
+    const logs = deploymentLogs.value.length > 0 
+        ? deploymentLogs.value 
+        : (deployment.logs || []);
+    
+    if (logs.length === 0) {
+        alert('No logs to export');
+        return;
+    }
+    
+    // Create log content
+    let content = `Deployment Logs - Deployment #${deployment.id}\n`;
+    content += `Status: ${deployment.status}\n`;
+    content += `Branch: ${deployment.branch || 'N/A'}\n`;
+    content += `Started: ${deployment.started_at ? new Date(deployment.started_at).toLocaleString() : 'N/A'}\n`;
+    content += `Completed: ${deployment.completed_at ? new Date(deployment.completed_at).toLocaleString() : 'N/A'}\n`;
+    if (deployment.commit_hash) {
+        content += `Commit: ${deployment.commit_hash}\n`;
+    }
+    if (deployment.error_message) {
+        content += `Error: ${deployment.error_message}\n`;
+    }
+    content += `\n${'='.repeat(80)}\n\n`;
+    
+    logs.sort((a, b) => a.order - b.order).forEach(log => {
+        content += `[${log.level.toUpperCase()}] ${log.step}\n`;
+        content += `${'-'.repeat(80)}\n`;
+        content += `${log.output}\n\n`;
+    });
+    
+    // Create and download file
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `deployment-${deployment.id}-logs-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+// Deployment Analytics
+const getDeploymentAnalytics = () => {
+    const deployments = props.site.deployments || [];
+    const total = deployments.length;
+    
+    if (total === 0) {
+        return {
+            successCount: 0,
+            failedCount: 0,
+            runningCount: 0,
+            successRate: 0,
+            failedRate: 0,
+            runningRate: 0,
+            avgDuration: 'N/A',
+        };
+    }
+    
+    const successCount = deployments.filter(d => d.status === 'success').length;
+    const failedCount = deployments.filter(d => d.status === 'failed').length;
+    const runningCount = deployments.filter(d => d.status === 'running').length;
+    
+    // Calculate average duration
+    const completedDeployments = deployments.filter(d => d.started_at && d.completed_at);
+    let totalSeconds = 0;
+    completedDeployments.forEach(d => {
+        const start = new Date(d.started_at);
+        const end = new Date(d.completed_at);
+        totalSeconds += Math.floor((end - start) / 1000);
+    });
+    const avgSeconds = completedDeployments.length > 0 ? Math.floor(totalSeconds / completedDeployments.length) : 0;
+    let avgDuration = 'N/A';
+    if (avgSeconds > 0) {
+        if (avgSeconds < 60) {
+            avgDuration = `${avgSeconds}s`;
+        } else if (avgSeconds < 3600) {
+            avgDuration = `${Math.floor(avgSeconds / 60)}m`;
+        } else {
+            avgDuration = `${Math.floor(avgSeconds / 3600)}h ${Math.floor((avgSeconds % 3600) / 60)}m`;
+        }
+    }
+    
+    return {
+        successCount,
+        failedCount,
+        runningCount,
+        successRate: total > 0 ? Math.round((successCount / total) * 100) : 0,
+        failedRate: total > 0 ? Math.round((failedCount / total) * 100) : 0,
+        runningRate: total > 0 ? Math.round((runningCount / total) * 100) : 0,
+        avgDuration,
+    };
+};
+
+// Deployment Comparison
+const selectDeploymentForComparison = (deploymentId) => {
+    const index = comparisonDeployments.value.indexOf(deploymentId);
+    if (index > -1) {
+        // Deselect
+        comparisonDeployments.value.splice(index, 1);
+    } else {
+        // Select (max 2)
+        if (comparisonDeployments.value.length < 2) {
+            comparisonDeployments.value.push(deploymentId);
+        } else {
+            alert('You can only compare 2 deployments at a time');
+        }
+    }
+};
+
+const getDeploymentById = (deploymentId) => {
+    return props.site.deployments?.find(d => d.id === deploymentId) || null;
+};
+
+// Time ago helper
+const getTimeAgo = (date) => {
+    if (!date) return 'N/A';
+    const now = new Date();
+    const then = new Date(date);
+    const diff = Math.floor((now - then) / 1000); // seconds
+    
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    return `${Math.floor(diff / 604800)}w ago`;
+};
+
+// Health Check
+const checkDeploymentHealth = async (deploymentId) => {
+    isCheckingHealth.value = deploymentId;
+    try {
+        const response = await axios.post(route('sites.check-health', props.site.id));
+        
+        if (response.data.success) {
+            alert(`Health check passed!\nStatus: ${response.data.status_code}\nResponse time: ${response.data.response_time}ms\nURL: ${response.data.url}`);
+        } else {
+            alert(`Health check failed: ${response.data.message || 'Site is not responding'}`);
+        }
+    } catch (error) {
+        alert('Health check failed: ' + (error.response?.data?.message || error.message));
+    } finally {
+        isCheckingHealth.value = null;
+    }
+};
+
+// Rollback Deployment
+const rollbackToDeployment = async (deploymentId) => {
+    const deployment = props.site.deployments?.find(d => d.id === deploymentId);
+    if (!deployment) {
+        alert('Deployment not found');
+        return;
+    }
+
+    if (!deployment.commit_hash) {
+        alert('Cannot rollback: This deployment does not have a commit hash');
+        return;
+    }
+
+    if (!confirm(`Rollback to Deployment #${deployment.id}?\n\nThis will checkout to commit: ${deployment.commit_hash.substring(0, 7)}\nBranch: ${deployment.branch || 'N/A'}\n\nAre you sure?`)) {
+        return;
+    }
+
+    isRollingBack.value = true;
+    try {
+        const response = await axios.post(route('sites.deployments.rollback', props.site.id), {
+            deployment_id: deploymentId
+        });
+
+        if (response.data.success) {
+            alert('Rollback completed successfully!');
+            router.reload();
+        } else {
+            alert('Rollback failed: ' + (response.data.message || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Rollback failed: ' + (error.response?.data?.message || error.message));
+    } finally {
+        isRollingBack.value = false;
+    }
+};
+
+// Retry Deployment
+const retryDeployment = async (deploymentId) => {
+    const deployment = props.site.deployments?.find(d => d.id === deploymentId);
+    if (!deployment) {
+        alert('Deployment not found');
+        return;
+    }
+
+    if (deployment.status !== 'failed') {
+        alert('Can only retry failed deployments');
+        return;
+    }
+
+    if (!confirm(`Retry Deployment #${deployment.id}?\n\nThis will re-run the deployment with:\nBranch: ${deployment.branch || 'N/A'}\nCommit: ${deployment.commit_hash ? deployment.commit_hash.substring(0, 7) : 'Latest from branch'}\n\nAre you sure?`)) {
+        return;
+    }
+
+    isRetryingDeployment.value = deploymentId;
+    try {
+        const response = await axios.post(route('deployments.retry', deploymentId));
+
+        if (response.data.success) {
+            alert('Deployment retry started successfully!');
+            router.reload();
+        } else {
+            alert('Retry failed: ' + (response.data.message || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Retry failed: ' + (error.response?.data?.message || error.message));
+    } finally {
+        isRetryingDeployment.value = null;
+    }
+};
+
+const loadDeploymentLogs = async (deploymentId = null) => {
+    let deployment = null;
+    
+    // Find the deployment by ID or use latest
+    if (deploymentId) {
+        deployment = props.site.deployments?.find(d => d.id === deploymentId);
+        if (!deployment) {
+            // Try to find in latest_deployment
+            if (props.site.latest_deployment && props.site.latest_deployment.id === deploymentId) {
+                deployment = props.site.latest_deployment;
+            }
+        }
+    } else {
+        deployment = props.site.latest_deployment;
+    }
+    
+    if (!deployment) {
         alert('No deployment found');
         return;
     }
     
+    selectedDeployment.value = deployment;
     showDeploymentLogsModal.value = true;
     isLoadingLogs.value = true;
     
     // Use existing logs if available
-    if (props.site.latest_deployment?.logs && props.site.latest_deployment.logs.length > 0) {
-        deploymentLogs.value = props.site.latest_deployment.logs.sort((a, b) => a.order - b.order);
+    if (deployment.logs && deployment.logs.length > 0) {
+        deploymentLogs.value = deployment.logs.sort((a, b) => a.order - b.order);
         isLoadingLogs.value = false;
     } else {
         // Reload to get fresh logs
@@ -1481,8 +2124,13 @@ const loadDeploymentLogs = async () => {
             only: ['site'],
             preserveState: true,
             onSuccess: () => {
-                if (props.site.latest_deployment?.logs) {
-                    deploymentLogs.value = props.site.latest_deployment.logs.sort((a, b) => a.order - b.order);
+                // Find the deployment again after reload
+                const updatedDeployment = props.site.deployments?.find(d => d.id === deployment.id) || 
+                                         (props.site.latest_deployment?.id === deployment.id ? props.site.latest_deployment : null);
+                
+                if (updatedDeployment?.logs) {
+                    deploymentLogs.value = updatedDeployment.logs.sort((a, b) => a.order - b.order);
+                    selectedDeployment.value = updatedDeployment;
                 } else {
                     deploymentLogs.value = [];
                 }
