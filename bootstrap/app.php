@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         ]);
+        
+        // Exclude webhook routes from CSRF verification
+        $middleware->validateCsrfTokens(except: [
+            'api/webhooks/deploy/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
