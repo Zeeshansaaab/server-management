@@ -1107,4 +1107,224 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get PM2 logs for a site.
+     */
+    public function getPm2Logs(Site $site, Request $request)
+    {
+        if ($site->server->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        try {
+            $sshService = app(\App\Services\SshService::class);
+            $lines = $request->input('lines', 100); // Default to last 100 lines
+            $lines = min(max((int)$lines, 10), 1000); // Limit between 10 and 1000 lines
+
+            // Get PM2 logs for the site domain
+            // Try to get logs for the specific domain name first
+            $command = "pm2 logs {$site->domain} --lines {$lines} --nostream --raw 2>&1";
+            $result = $sshService->execute($site->server, $command, false);
+            
+            // If that fails, try to find the process by domain in the PM2 list
+            if (!$result['success'] || str_contains($result['output'], 'not found') || str_contains($result['output'], 'No PM2 process')) {
+                // List all PM2 processes and find one matching the domain
+                $listCommand = "pm2 jlist 2>&1";
+                $listResult = $sshService->execute($site->server, $listCommand, false);
+                
+                if ($listResult['success']) {
+                    $processes = json_decode($listResult['output'], true);
+                    if (is_array($processes)) {
+                        foreach ($processes as $process) {
+                            if (isset($process['name']) && str_contains($process['name'], $site->domain)) {
+                                $command = "pm2 logs {$process['name']} --lines {$lines} --nostream --raw 2>&1";
+                                $result = $sshService->execute($site->server, $command, false);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // If still no success, try getting all logs and filtering
+                if (!$result['success'] || empty(trim($result['output']))) {
+                    $command = "pm2 logs --lines {$lines} --nostream --raw 2>&1 | grep -i {$site->domain} || echo 'No PM2 logs found for {$site->domain}'";
+                    $result = $sshService->execute($site->server, $command, false);
+                }
+            }
+
+            if (!$result['success']) {
+                // Try alternative: check if PM2 is installed and list processes
+                $checkCommand = "pm2 list 2>&1";
+                $checkResult = $sshService->execute($site->server, $checkCommand, false);
+                
+                if (!$checkResult['success'] || str_contains($checkResult['output'], 'command not found')) {
+                    return response()->json([
+                        'success' => false,
+                        'logs' => '',
+                        'message' => 'PM2 is not installed or not accessible on this server',
+                    ], 404);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'logs' => $result['output'] ?? '',
+                'error' => $result['error'] ?? '',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get PM2 logs', [
+                'site_id' => $site->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'logs' => '',
+                'message' => 'Failed to get PM2 logs: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get .env file content for a site.
+     */
+    public function getEnvFile(Site $site)
+    {
+        if ($site->server->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        try {
+            $sshService = app(\App\Services\SshService::class);
+            $currentPath = $site->getCurrentPath();
+            
+            // Try to read .env file from current path
+            $command = "cat " . escapeshellarg($currentPath . '/.env') . " 2>&1";
+            $result = $sshService->execute($site->server, $command, false);
+
+            if (!$result['success'] || str_contains($result['output'], 'No such file')) {
+                // Try web directory as fallback
+                $webDirectory = $site->getWebDirectoryPath();
+                $command = "cat " . escapeshellarg($webDirectory . '/.env') . " 2>&1";
+                $result = $sshService->execute($site->server, $command, false);
+            }
+
+            if (!$result['success'] || str_contains($result['output'], 'No such file')) {
+                return response()->json([
+                    'success' => false,
+                    'content' => '',
+                    'message' => '.env file not found',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'content' => $result['output'],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get .env file', [
+                'site_id' => $site->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'content' => '',
+                'message' => 'Failed to get .env file: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update .env file content for a site.
+     */
+    public function updateEnvFile(Site $site, Request $request)
+    {
+        if ($site->server->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'content' => 'required|string',
+        ]);
+
+        try {
+            $sshService = app(\App\Services\SshService::class);
+            $currentPath = $site->getCurrentPath();
+            $envPath = $currentPath . '/.env';
+            
+            // First check if .env exists in current path, otherwise try web directory
+            $checkCommand = "test -f " . escapeshellarg($envPath) . " && echo 'exists' || echo 'not_found'";
+            $checkResult = $sshService->execute($site->server, $checkCommand, false);
+            
+            if (trim($checkResult['output']) !== 'exists') {
+                // Try web directory
+                $webDirectory = $site->getWebDirectoryPath();
+                $envPath = $webDirectory . '/.env';
+                $checkCommand = "test -f " . escapeshellarg($envPath) . " && echo 'exists' || echo 'not_found'";
+                $checkResult = $sshService->execute($site->server, $checkCommand, false);
+                
+                if (trim($checkResult['output']) !== 'exists') {
+                    // Create .env file in current path
+                    $envPath = $currentPath . '/.env';
+                }
+            }
+
+            // Write content to .env file using base64 encoding to handle special characters
+            // This is more reliable than echo for multiline content
+            $base64Content = base64_encode($validated['content']);
+            $tempFile = '/tmp/env_' . $site->id . '_' . time() . '.tmp';
+            
+            // Write base64 content to temp file, then decode it
+            $writeCommand = "echo " . escapeshellarg($base64Content) . " | base64 -d > " . escapeshellarg($tempFile);
+            $writeResult = $sshService->execute($site->server, $writeCommand, false);
+            
+            if (!$writeResult['success']) {
+                // Fallback: use cat with heredoc-like approach via stdin
+                // Write content line by line using a script
+                $contentEscaped = str_replace(['\\', '$', '`', '"'], ['\\\\', '\\$', '\\`', '\\"'], $validated['content']);
+                $catCommand = "cat > " . escapeshellarg($tempFile) . " << 'ENVEOF'\n" . $contentEscaped . "\nENVEOF";
+                $writeResult = $sshService->execute($site->server, $catCommand, false);
+                
+                if (!$writeResult['success']) {
+                    throw new \Exception('Failed to write temporary file: ' . $writeResult['error']);
+                }
+            }
+
+            // Move temp file to .env (using sudo if needed)
+            $moveCommand = "mv " . escapeshellarg($tempFile) . " " . escapeshellarg($envPath);
+            $moveResult = $sshService->execute($site->server, $moveCommand, true);
+            
+            if (!$moveResult['success']) {
+                // Clean up temp file
+                $sshService->execute($site->server, "rm -f " . escapeshellarg($tempFile), false);
+                throw new \Exception('Failed to move file to .env: ' . $moveResult['error']);
+            }
+
+            // Set proper permissions
+            $chmodCommand = "chmod 600 " . escapeshellarg($envPath);
+            $sshService->execute($site->server, $chmodCommand, true);
+
+            Log::info('.env file updated', [
+                'site_id' => $site->id,
+                'domain' => $site->domain,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => '.env file updated successfully',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update .env file', [
+                'site_id' => $site->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update .env file: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

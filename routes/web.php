@@ -39,6 +39,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/sites/{site}/cron-jobs', [DashboardController::class, 'listCronJobs'])->name('sites.cron-jobs');
     Route::post('/sites/{site}/cron-jobs', [DashboardController::class, 'storeCronJob'])->name('sites.cron-jobs.store');
     Route::delete('/cron-jobs/{scheduledCommand}', [DashboardController::class, 'deleteCronJob'])->name('cron-jobs.delete');
+    
+    // PM2 logs and .env file routes
+    Route::get('/sites/{site}/pm2-logs', [DashboardController::class, 'getPm2Logs'])->name('sites.pm2-logs');
+    Route::get('/sites/{site}/env-file', [DashboardController::class, 'getEnvFile'])->name('sites.env-file');
+    Route::post('/sites/{site}/env-file', [DashboardController::class, 'updateEnvFile'])->name('sites.env-file.update');
 });
 
 // Webhook routes (no auth required - uses token authentication)

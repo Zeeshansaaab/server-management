@@ -741,6 +741,110 @@
                 </div>
             </div>
 
+            <!-- PM2 Logs Section -->
+            <div v-if="isNodeFramework()" class="mb-8">
+                <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">PM2 Logs</h2>
+                        <div class="flex items-center space-x-3">
+                            <select
+                                v-model="pm2LogLines"
+                                @change="loadPm2Logs"
+                                class="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            >
+                                <option :value="50">Last 50 lines</option>
+                                <option :value="100">Last 100 lines</option>
+                                <option :value="200">Last 200 lines</option>
+                                <option :value="500">Last 500 lines</option>
+                            </select>
+                            <button
+                                @click="loadPm2Logs"
+                                :disabled="isLoadingPm2Logs"
+                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <svg v-if="isLoadingPm2Logs" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Refresh
+                            </button>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    v-model="pm2AutoRefresh"
+                                    class="rounded border-slate-300 dark:border-slate-600 text-cyan-600 focus:ring-cyan-500"
+                                />
+                                <span class="text-sm text-slate-700 dark:text-slate-300">Auto-refresh</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 dark:bg-slate-950 rounded-lg p-4 overflow-x-auto">
+                        <pre v-if="isLoadingPm2Logs" class="text-slate-400 text-sm">Loading logs...</pre>
+                        <pre v-else-if="pm2Logs" class="text-green-400 text-xs font-mono whitespace-pre-wrap">{{ pm2Logs }}</pre>
+                        <pre v-else class="text-slate-400 text-sm">No logs available. Make sure PM2 is running for this site.</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- .env File Editor Section -->
+            <div class="mb-8">
+                <div class="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Environment Variables (.env)</h2>
+                        <div class="flex items-center space-x-3">
+                            <button
+                                @click="loadEnvFile"
+                                :disabled="isLoadingEnvFile"
+                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <svg v-if="isLoadingEnvFile" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Reload
+                            </button>
+                            <button
+                                @click="saveEnvFile"
+                                :disabled="isSavingEnvFile || !envFileContent"
+                                class="inline-flex items-center px-4 py-1.5 text-sm font-medium rounded-lg text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <svg v-if="isSavingEnvFile" class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                {{ isSavingEnvFile ? 'Saving...' : 'Save Changes' }}
+                            </button>
+                        </div>
+                    </div>
+                    <div v-if="envFileError" class="mb-4 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg">
+                        <div class="text-sm text-rose-800 dark:text-rose-400">{{ envFileError }}</div>
+                    </div>
+                    <div v-if="envFileSuccess" class="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg">
+                        <div class="text-sm text-emerald-800 dark:text-emerald-400">{{ envFileSuccess }}</div>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <textarea
+                            v-model="envFileContent"
+                            rows="20"
+                            class="w-full px-4 py-3 rounded-lg border-0 bg-transparent text-slate-900 dark:text-slate-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
+                            placeholder="Loading .env file..."
+                        ></textarea>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Edit your environment variables directly. Changes will be saved to the .env file on the server.
+                    </p>
+                </div>
+            </div>
+
             <!-- Edit Site Modal -->
             <div v-if="showEditModal" class="fixed inset-0 z-[100] overflow-y-auto" @click.self="showEditModal = false">
                 <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -1118,7 +1222,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -1152,6 +1256,20 @@ const cronForm = ref({
     user: props.site.system_user || '',
     is_active: true,
 });
+
+// PM2 Logs
+const pm2Logs = ref('');
+const isLoadingPm2Logs = ref(false);
+const pm2LogLines = ref(100);
+const pm2AutoRefresh = ref(false);
+let pm2RefreshInterval = null;
+
+// .env File
+const envFileContent = ref('');
+const isLoadingEnvFile = ref(false);
+const isSavingEnvFile = ref(false);
+const envFileError = ref('');
+const envFileSuccess = ref('');
 
 const editForm = ref({
     repository_url: props.site.repository_url || '',
@@ -1640,4 +1758,113 @@ const deleteCronJob = async (id) => {
         alert('Failed to delete cron job: ' + (error.response?.data?.message || error.message));
     }
 };
+
+// PM2 Logs Functions
+const loadPm2Logs = async () => {
+    if (!isNodeFramework()) return;
+    
+    isLoadingPm2Logs.value = true;
+    try {
+        const response = await axios.get(route('sites.pm2-logs', props.site.id), {
+            params: { lines: pm2LogLines.value }
+        });
+        
+        if (response.data.success) {
+            pm2Logs.value = response.data.logs || response.data.error || 'No logs available';
+        } else {
+            pm2Logs.value = response.data.message || 'Failed to load logs';
+        }
+    } catch (error) {
+        pm2Logs.value = 'Error loading logs: ' + (error.response?.data?.message || error.message);
+    } finally {
+        isLoadingPm2Logs.value = false;
+    }
+};
+
+// Watch for auto-refresh toggle
+watch(pm2AutoRefresh, (enabled) => {
+    if (enabled) {
+        // Start auto-refresh every 5 seconds
+        pm2RefreshInterval = setInterval(() => {
+            if (isNodeFramework()) {
+                loadPm2Logs();
+            }
+        }, 5000);
+    } else {
+        // Stop auto-refresh
+        if (pm2RefreshInterval) {
+            clearInterval(pm2RefreshInterval);
+            pm2RefreshInterval = null;
+        }
+    }
+});
+
+// Clean up interval on unmount
+onBeforeUnmount(() => {
+    if (pm2RefreshInterval) {
+        clearInterval(pm2RefreshInterval);
+    }
+});
+
+// .env File Functions
+const loadEnvFile = async () => {
+    isLoadingEnvFile.value = true;
+    envFileError.value = '';
+    envFileSuccess.value = '';
+    
+    try {
+        const response = await axios.get(route('sites.env-file', props.site.id));
+        
+        if (response.data.success) {
+            envFileContent.value = response.data.content || '';
+        } else {
+            envFileError.value = response.data.message || '.env file not found';
+            envFileContent.value = '';
+        }
+    } catch (error) {
+        envFileError.value = 'Error loading .env file: ' + (error.response?.data?.message || error.message);
+        envFileContent.value = '';
+    } finally {
+        isLoadingEnvFile.value = false;
+    }
+};
+
+const saveEnvFile = async () => {
+    if (!envFileContent.value) {
+        envFileError.value = 'Cannot save empty .env file';
+        return;
+    }
+    
+    isSavingEnvFile.value = true;
+    envFileError.value = '';
+    envFileSuccess.value = '';
+    
+    try {
+        const response = await axios.post(route('sites.env-file.update', props.site.id), {
+            content: envFileContent.value
+        });
+        
+        if (response.data.success) {
+            envFileSuccess.value = '.env file updated successfully!';
+            // Clear success message after 3 seconds
+            setTimeout(() => {
+                envFileSuccess.value = '';
+            }, 3000);
+        } else {
+            envFileError.value = response.data.message || 'Failed to save .env file';
+        }
+    } catch (error) {
+        envFileError.value = 'Error saving .env file: ' + (error.response?.data?.message || error.message);
+    } finally {
+        isSavingEnvFile.value = false;
+    }
+};
+
+// Load .env file on mount if it's a Node.js framework
+onMounted(() => {
+    if (isNodeFramework()) {
+        loadPm2Logs();
+    }
+    loadEnvFile();
+});
 </script>
